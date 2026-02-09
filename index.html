@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Washer & Dryer Timer - Cheap Electricity Hours</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-label {
+            color: #666;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .countdown-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .countdown-label {
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .countdown-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .countdown-detail {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .cheap-hours {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .cheap-hours h3 {
+            color: #2e7d32;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .cheap-hours-list {
+            list-style: none;
+            color: #1b5e20;
+            font-size: 15px;
+        }
+
+        .cheap-hours-list li {
+            padding: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .cheap-hours-list li:before {
+            content: "⚡";
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .status.active {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .status.inactive {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .countdown-value {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⏰ Washer & Dryer Timer</h1>
+        <p class="subtitle">Optimize your laundry for cheap electricity hours</p>
+
+        <div class="info-box">
+            <div class="info-label">Current Time</div>
+            <div class="info-value" id="currentTime">--:--:--</div>
+        </div>
+
+        <div id="statusBox" class="status inactive">
+            Checking status...
+        </div>
+
+        <div class="countdown-box">
+            <div class="countdown-label">Time Until Next Cheap Hours</div>
+            <div class="countdown-value" id="countdown">--:--:--</div>
+            <div class="countdown-detail" id="nextPeriod">Calculating...</div>
+        </div>
+
+        <div class="countdown-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="countdown-label">Time Until Second Next Cheap Hours</div>
+            <div class="countdown-value" id="countdown2">--:--:--</div>
+            <div class="countdown-detail" id="nextPeriod2">Calculating...</div>
+        </div>
+
+        <div class="cheap-hours">
+            <h3>💡 Cheap Electricity Hours</h3>
+            <ul class="cheap-hours-list">
+                <li>Afternoon: 14:30 - 16:30</li>
+                <li>Night: 01:00 - 06:00</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Define cheap electricity periods
+        const cheapPeriods = [
+            { start: { hour: 1, minute: 0 }, end: { hour: 6, minute: 0 }, name: "Night Period (01:00 - 06:00)" },
+            { start: { hour: 14, minute: 30 }, end: { hour: 16, minute: 30 }, name: "Afternoon Period (14:30 - 16:30)" }
+        ];
+
+        function updateTime() {
+            const now = new Date();
+            
+            // Update current time display
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            document.getElementById('currentTime').textContent = timeString;
+
+            // Check if currently in a cheap period
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            let isInCheapPeriod = false;
+            let currentPeriod = null;
+
+            for (const period of cheapPeriods) {
+                const startMinutes = period.start.hour * 60 + period.start.minute;
+                const endMinutes = period.end.hour * 60 + period.end.minute;
+
+                if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+                    isInCheapPeriod = true;
+                    currentPeriod = period;
+                    break;
+                }
+            }
+
+            // Update status box
+            const statusBox = document.getElementById('statusBox');
+            if (isInCheapPeriod) {
+                statusBox.textContent = '✅ Cheap Hours Active - Great time to run your washer!';
+                statusBox.className = 'status active';
+            } else {
+                statusBox.textContent = '⏳ Regular Hours - Wait for cheap hours';
+                statusBox.className = 'status inactive';
+            }
+
+            // Calculate time until next cheap period
+            if (isInCheapPeriod) {
+                // Show time remaining in current period
+                const endMinutes = currentPeriod.end.hour * 60 + currentPeriod.end.minute;
+                const minutesRemaining = endMinutes - currentMinutes;
+                const hours = Math.floor(minutesRemaining / 60);
+                const minutes = minutesRemaining % 60;
+                
+                document.getElementById('countdown').textContent = `${hours}h ${minutes}m remaining`;
+                document.getElementById('nextPeriod').textContent = `Current period ends at ${String(currentPeriod.end.hour).padStart(2, '0')}:${String(currentPeriod.end.minute).padStart(2, '0')}`;
+            } else {
+                // Find next two cheap periods
+                let periodsWithTime = [];
+
+                for (const period of cheapPeriods) {
+                    const startMinutes = period.start.hour * 60 + period.start.minute;
+                    let minutesUntil;
+
+                    if (startMinutes > currentMinutes) {
+                        // Period is later today
+                        minutesUntil = startMinutes - currentMinutes;
+                    } else {
+                        // Period is tomorrow
+                        minutesUntil = (24 * 60 - currentMinutes) + startMinutes;
+                    }
+
+                    periodsWithTime.push({ period, minutesUntil });
+                }
+
+                // Sort by time until period
+                periodsWithTime.sort((a, b) => a.minutesUntil - b.minutesUntil);
+
+                // Display first next period
+                if (periodsWithTime[0]) {
+                    const minMinutesUntil = periodsWithTime[0].minutesUntil;
+                    const hours = Math.floor(minMinutesUntil / 60);
+                    const minutes = minMinutesUntil % 60;
+                    const seconds = 60 - now.getSeconds();
+
+                    document.getElementById('countdown').textContent = `${hours}h ${minutes}m ${seconds}s`;
+                    document.getElementById('nextPeriod').textContent = `Next: ${periodsWithTime[0].period.name}`;
+                }
+
+                // Display second next period
+                if (periodsWithTime[1]) {
+                    const minMinutesUntil = periodsWithTime[1].minutesUntil;
+                    const hours = Math.floor(minMinutesUntil / 60);
+                    const minutes = minMinutesUntil % 60;
+                    const seconds = 60 - now.getSeconds();
+
+                    document.getElementById('countdown2').textContent = `${hours}h ${minutes}m ${seconds}s`;
+                    document.getElementById('nextPeriod2').textContent = `Next: ${periodsWithTime[1].period.name}`;
+                }
+            }
+        }
+
+        // Update immediately and then every second
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>
