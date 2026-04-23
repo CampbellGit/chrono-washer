@@ -142,6 +142,54 @@
             color: #c62828;
         }
 
+        .planner-box {
+            background: #fff4e5;
+            border-left: 4px solid #ff9800;
+            border-radius: 8px;
+            padding: 18px;
+            margin-top: 18px;
+        }
+
+        .planner-box h3 {
+            color: #e65100;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .planner-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .planner-label {
+            color: #5d4037;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .planner-select {
+            border: 1px solid #ffcc80;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 14px;
+            background: white;
+            color: #4e342e;
+        }
+
+        .planner-result {
+            color: #4e342e;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .planner-highlight {
+            font-weight: 700;
+            color: #bf360c;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 25px;
@@ -190,6 +238,26 @@
                 <li>Night: 01:00 - 06:00</li>
             </ul>
         </div>
+
+        <div class="planner-box">
+            <h3>🧺 Wash Planner (Pick Finish Time)</h3>
+            <div class="planner-row">
+                <label class="planner-label" for="washType">Program:</label>
+                <select id="washType" class="planner-select">
+                    <option value="cotton">Cotton (2h 55m)</option>
+                    <option value="blankets">Blankets (3h 34m)</option>
+                    <option value="delicate">Delicate (1h 00m)</option>
+                </select>
+            </div>
+            <div class="planner-row">
+                <label class="planner-label" for="finishTarget">Finish by:</label>
+                <select id="finishTarget" class="planner-select">
+                    <option value="night-end">05:00 (Night plan)</option>
+                    <option value="afternoon-end">16:30 (Afternoon cheap hours end)</option>
+                </select>
+            </div>
+            <div id="plannerResult" class="planner-result">Calculating ideal start time...</div>
+        </div>
     </div>
 
     <script>
@@ -198,6 +266,80 @@
             { start: { hour: 1, minute: 0 }, end: { hour: 6, minute: 0 }, name: "Night Period (01:00 - 06:00)" },
             { start: { hour: 14, minute: 30 }, end: { hour: 16, minute: 30 }, name: "Afternoon Period (14:30 - 16:30)" }
         ];
+
+        const washDurations = {
+            cotton: 2 * 60 + 55,
+            blankets: 3 * 60 + 34,
+            delicate: 1 * 60
+        };
+
+        const finishTargets = {
+            'night-end': {
+                hour: 5,
+                minute: 0,
+                label: '05:00',
+                periodText: 'night cheap hours (01:00 - 06:00)',
+                isInsideCheapHours: (dateObj) => dateObj.getHours() >= 1 && dateObj.getHours() < 6
+            },
+            'afternoon-end': {
+                hour: 16,
+                minute: 30,
+                label: '16:30',
+                periodText: 'afternoon cheap hours (14:30 - 16:30)',
+                isInsideCheapHours: (dateObj) => {
+                    const minutes = dateObj.getHours() * 60 + dateObj.getMinutes();
+                    return minutes >= (14 * 60 + 30) && minutes < (16 * 60 + 30);
+                }
+            }
+        };
+
+        function formatDateTime(dateObj) {
+            const day = dateObj.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            const time = dateObj.toLocaleTimeString('en-US', {
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            return `${day} at ${time}`;
+        }
+
+        function updateFinishPlanner() {
+            const washType = document.getElementById('washType').value;
+            const finishTarget = finishTargets[document.getElementById('finishTarget').value];
+            const durationMinutes = washDurations[washType];
+            const now = new Date();
+
+            const finishAt = new Date(now);
+            finishAt.setHours(finishTarget.hour, finishTarget.minute, 0, 0);
+            if (now >= finishAt) {
+                finishAt.setDate(finishAt.getDate() + 1);
+            }
+
+            const startAt = new Date(finishAt.getTime() - durationMinutes * 60 * 1000);
+            const waitMinutes = Math.max(0, Math.floor((startAt.getTime() - now.getTime()) / (60 * 1000)));
+
+            const waitHoursPart = Math.floor(waitMinutes / 60);
+            const waitMinutesPart = waitMinutes % 60;
+
+            const isTargetCheapHours = finishTarget.isInsideCheapHours(startAt);
+
+            const plannerResult = document.getElementById('plannerResult');
+            plannerResult.innerHTML = `
+                Start this <span class="planner-highlight">${washType}</span> cycle at
+                <span class="planner-highlight">${formatDateTime(startAt)}</span> to finish at
+                <span class="planner-highlight">${finishTarget.label}</span>.<br>
+                Time until start: <span class="planner-highlight">${waitHoursPart}h ${waitMinutesPart}m</span>.<br>
+                ${isTargetCheapHours
+                    ? `This start is inside ${finishTarget.periodText}.`
+                    : `This start is outside ${finishTarget.periodText}. Consider using a delayed start if available.`}
+            `;
+        }
 
         function updateTime() {
             const now = new Date();
@@ -293,9 +435,14 @@
             }
         }
 
+        document.getElementById('washType').addEventListener('change', updateFinishPlanner);
+        document.getElementById('finishTarget').addEventListener('change', updateFinishPlanner);
+
         // Update immediately and then every second
         updateTime();
+        updateFinishPlanner();
         setInterval(updateTime, 1000);
+        setInterval(updateFinishPlanner, 30000);
     </script>
 </body>
 </html>
